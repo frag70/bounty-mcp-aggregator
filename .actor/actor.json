@@ -1,19 +1,23 @@
 {
   "actorSpecification": 1,
   "name": "bounty-mcp-aggregator",
-  "title": "Open-Source Bounty & Agent Skill JSON Normalizer (PPE Standby)",
-  "version": "0.1",
+  "title": "Verified Bounty & Agent Task Normalizer (Standby API)",
+  "description": "Real-time Standby API serving normalized, deduplicated feeds of verified open bounties and coding tasks for AI agents and MCP clients.",
+  "version": "0.1.0",
   "usesStandbyMode": true,
+  "defaultRunMemoryMbytes": 512,
   "pricingInfo": {
     "pricingModel": "PAY_PER_EVENT",
     "events": {
       "actor-start": {
         "priceUsd": 0.0001,
-        "description": "Startup event"
+        "title": "Standby Request Event",
+        "description": "Base HTTP request invocation"
       },
       "bounty-normalized": {
         "priceUsd": 0.002,
-        "description": "Normalized verified bounty schema"
+        "title": "Normalized Bounty Item",
+        "description": "Normalized verified bounty entry with metadata"
       }
     }
   }
