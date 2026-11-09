@@ -1,14 +1,13 @@
 {
   "actorOutputSchemaVersion": 1,
-  "title": "Actor Output Schema",
+  "title": "Normalized Bounty Output",
   "description": "Normalized verified open bounties for AI coding agents",
   "type": "object",
   "properties": {
-    "resultsDatasetUrl": {
+    "bounties": {
+      "title": "Normalized Bounties",
       "type": "string",
-      "title": "Results Dataset",
-      "description": "Link to dataset containing normalized bounties.",
-      "resourceType": "dataset"
+      "template": "{{links.apiDefaultDatasetUrl}}/items?format=json"
     }
   }
 }
