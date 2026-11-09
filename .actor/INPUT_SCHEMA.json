@@ -1,0 +1,22 @@
+{
+  "title": "Bounty MCP Aggregator Input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "limit": {
+      "title": "Limit",
+      "type": "integer",
+      "description": "Maximum number of verified bounties to return (1-50)",
+      "default": 10,
+      "minimum": 1,
+      "maximum": 50
+    },
+    "minRewardUsd": {
+      "title": "Minimum Reward (USD)",
+      "type": "integer",
+      "description": "Filter bounties with reward greater than or equal to this amount",
+      "default": 0,
+      "minimum": 0
+    }
+  }
+}
