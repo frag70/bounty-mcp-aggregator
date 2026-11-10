@@ -211,6 +211,39 @@ async def run_server(port: int):
     async with server:
         await server.serve_forever()
 
+async def run_batch(actor_input: Dict[str, Any]):
+    """Execute standard batch run, push data to Apify dataset, and charge PPE event."""
+    limit = int(actor_input.get("limit", 10))
+    min_reward = int(actor_input.get("minRewardUsd", 0))
+
+    print(f"🔎 [BATCH] Fetching verified bounties (limit={limit}, min_reward=${min_reward})...")
+    loop = asyncio.get_running_loop()
+    bounties = await loop.run_in_executor(None, fetch_live_bounties, limit)
+
+    if min_reward > 0:
+        bounties = [b for b in bounties if b.get("reward_usd", 0) >= min_reward]
+
+    # Charge PPE event if running on Apify platform
+    is_apify = Actor and hasattr(Actor, "is_at_home") and Actor.is_at_home()
+    if is_apify:
+        try:
+            await Actor.charge(event_name="actor-start", count=1)
+        except Exception as e:
+            print(f"[WARN] Failed to charge actor-start: {e}", file=sys.stderr)
+
+        if bounties:
+            try:
+                await Actor.charge(event_name="bounty-normalized", count=len(bounties))
+            except Exception as e:
+                print(f"[WARN] Failed to charge bounty-normalized: {e}", file=sys.stderr)
+
+    # Push to Apify default dataset
+    if Actor:
+        await Actor.push_data(bounties)
+        print(f"✅ Successfully pushed {len(bounties)} bounties to default dataset!")
+    else:
+        print(json.dumps(bounties, indent=2))
+
 async def main():
     if "--cli" in sys.argv:
         print("[CLI MODE] Fetching normalized bounties...")
@@ -218,16 +251,25 @@ async def main():
         print(json.dumps({"count": len(items), "data": items}, indent=2))
         return
 
-    # Check port from Apify config or environment
-    port = int(os.environ.get("ACTOR_WEB_SERVER_PORT", "8080"))
+    if "--server" in sys.argv:
+        port = int(os.environ.get("ACTOR_WEB_SERVER_PORT", "8080"))
+        await run_server(port)
+        return
+
     if Actor:
         async with Actor:
-            if hasattr(Actor, "configuration") and hasattr(Actor.configuration, "web_server_port"):
-                if Actor.configuration.web_server_port:
-                    port = Actor.configuration.web_server_port
-            await run_server(port)
+            actor_input = await Actor.get_input() or {}
+            mode = actor_input.get("runMode", "BATCH")
+            if mode == "STANDBY_SERVER":
+                port = int(os.environ.get("ACTOR_WEB_SERVER_PORT", "8080"))
+                if hasattr(Actor, "configuration") and hasattr(Actor.configuration, "web_server_port"):
+                    if Actor.configuration.web_server_port:
+                        port = Actor.configuration.web_server_port
+                await run_server(port)
+            else:
+                await run_batch(actor_input)
     else:
-        await run_server(port)
+        await run_batch({})
 
 if __name__ == "__main__":
     try:
